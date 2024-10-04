@@ -104,7 +104,7 @@ library(data.table)
 no_snps <- 20000
 
 # Using the quality-controlled SNP matrix from Kenneth:
-SNP.matrix <- data.frame(fread("../../data/Helgeland_01_2018_QC.raw"))
+SNP.matrix <- data.frame(fread("data/Helgeland_01_2018_QC.raw"))
 #SNP.matrix <- data.frame(fread("data/full_imputed_dosage.raw"))
 
 names(SNP.matrix)[2] <- "ringnr"
@@ -116,7 +116,7 @@ SNP.matrix.reduced <- cbind(SNP.matrix[,1:6],
 
 
 # Generate a data frame where individuals with ring numbers from d.ID.res.mass are contained, as well as the phenotype (here the residuals from the lmer analysis with mass as response)
-d.dat <- merge(d.ID.mass[,c("ringnr","ID","mean_pheno","hatchisland")],SNP.matrix.reduced,by="ringnr")
+d.dat <- merge(d.ID.mass[,c("ringnr","ID","mean_pheno","hatchisland")],SNP.matrix,by="ringnr")
 #FINISH!!!!!!!!!!!!
 
 #############################################################
