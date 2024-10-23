@@ -73,7 +73,7 @@ def random_split(pheno:str = "mass", num_folds:int = 5, seed: int = 42) -> pd.Da
     #for i in range(n_folds):
     #    fold = x[x["fold"] == i]
     #    fold = fold["ringnr"]
-    #    fold.to_csv(f"data/interim/random2_{n_folds}fold_{i+1}.csv", index=False)
+    #    fold.to_csv(f"data/interim/folds/random_{n_folds}fold_{i+1}_{pheno}.csv", index=False)
 
 
 
@@ -137,4 +137,4 @@ def subset(X:pd.DataFrame, seed:int = 42, num_snps:int = 20000) -> pd.DataFrame:
     
 if __name__ == "__main__":
     #island_split()
-    random_split("mass", 10, 42)
+    random_split("wing", 10, 42)

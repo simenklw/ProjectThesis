@@ -133,7 +133,7 @@ corr_cv <- c()
 ########################################################
 #Everthing under here must go in a loop later
 ########################################################
-for (i in 2:10){
+for (i in 7:10){
   ringnr_test <- fold_data[fold_data$fold == i, "ringnr"]
   ringnr_train <- fold_data[fold_data$fold !=i, "ringnr"]
   
@@ -185,17 +185,20 @@ for (i in 2:10){
   
   #get predicted values
   preds_EG <- model1.mass$summary.fitted.values$mean[(n_train + 1):N]
-  preds <- model1.mass$summary.random$IDC2$mode[idxs_test]
+  preds_BV_mode <- model1.mass$summary.random$IDC2$mode[idxs_test]
+  preds_BV_mean <- model1.mass$summary.random$IDC2$mean[idxs_test]
+  
   
   #calculate matrics:
   corr_EG <- cor(preds_EG, pheno_test_EG, method = "pearson")
-  corr <- cor(preds, pheno_test, method = "pearson")
+  corr_BV_mode <- cor(preds_BV_mode, pheno_test, method = "pearson")
+  corr_BV_mean <- cor(preds_BV_mean, pheno_test, method = "pearson")
   
   
   
-  new_data <- data.frame(corr_EG, corr)
-  write.table(new_data, "INLA_results2.csv", col.names = FALSE, row.names = FALSE, append = TRUE)
-  #write.csv(data.frame(corr_EG, corr), "INLA_results2.csv", row.names = FALSE)
+  new_data <- data.frame(corr_EG, corr_BV_mode, corr_BV_mean)
+  write.table(new_data, "INLA_mass_10fold.csv", col.names = FALSE, row.names = FALSE, append = TRUE)
+  #write.csv(data.frame(corr_EG, corr_BV_mode, corr_BV_mean), "INLA_mass_10fold.csv", row.names = FALSE)
 }
 
 
