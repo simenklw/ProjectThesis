@@ -1,50 +1,62 @@
 import numpy as np
 import pandas as pd
 
+inner_system = {'28':'Indre Kvarøy',
+                 '27':'Hestmannøy',
+                 '26':'Gjerøy',
+                 '38':'Aldra',
+                 '20':'Nesøy',
+                 '331':'Lurøy',
+                 '332':'Onøy'} 
+
+outer_sytem = {'24':'Selvær',
+                 '23':'Træna',
+                 '22':'Myken',
+                 '34':'Lovund',
+                 '35':'Sleneset'}
+                 
+
+all_islands = {'28':'Indre Kvarøy',
+                    '27':'Hestmannøy',
+                    '26':'Gjerøy',
+                    '38':'Aldra',
+                    '20':'Nesøy',
+                    '331':'Lurøy',
+                    '332':'Onøy',
+                    '24':'Selvær',
+                    '23':'Træna',
+                    '22':'Myken',
+                    '34':'Lovund',
+                    '35':'Sleneset',
+                    '30':'Selsøyvik',
+                    '36':'Rødøy',
+                    '21':'Sundøy',
+                    '29':'Ytre Kvarøy'}
+
+
 def island_split(pheno:str = "mass") -> pd.DataFrame:
+
     data = pd.read_feather(f"data/processed/{pheno}BV.feather")  
+    data = data[["ringnr", "hatchisland"]]
 
-    table = pd.crosstab(data["hatchisland"],data["hatchisland"])
-    diag = np.diag(table)
+    #proceed with only the islands where the values count for hatchisland is greater than 10
+    island_counts = data.hatchisland.value_counts()
+    island_counts = island_counts[island_counts > 10]
 
-    # get the indexes of the 8 highest values in the diagonal
-    idx = np.argpartition(diag, -8)[-8:]
-
-    #islands with highest number of individuals
-    islands = table.index[idx]
-
-    # get the column hatchisland and ringnr for the 8 islands with the highest number of individuals
-    x = data.loc[data["hatchisland"].isin(islands),["hatchisland","ringnr"]]
-    del data
-
-    #Now we will manually make folds for a 8-fold cross validation based on the hatchisland column
-    #The idea is to make 8 folds where each fold contains all individuals from one of the 8 islands with the highest number of individuals.
-    #This way we can make sure that the model is trained on all islands and tested on all islands. The size of the folds will be different.
-
-    #We will make a new column in the data frame called "fold" which will contain the fold number for each individual.
-    #The fold number will be between 1 and 8.
-
-
-    #initialize the fold column with zeros
-    x["fold"] = 0
-
-    #initialize the fold number
-    fold = 1
-
-    #loop over the 8 islands with the highest number of individuals
-    for island in islands:
-        #get the indexes of the individuals from the current island
-        idx = x.loc[x["hatchisland"] == island].index
-        #set the fold number for the individuals from the current island
-        x.loc[idx,"fold"] = fold
-        #increment the fold number
-        fold += 1
+    folds = pd.DataFrame(columns = ["ringnr", "fold"])
     
-    #save the data frame with the fold column
-    for i in range(1,9):
-        fold = x[x["fold"] == i]
-        fold = fold["ringnr"]
-        fold.to_csv(f"data/interim/{pheno}BV_island_8fold_{i}.csv", index=False)
+    
+    for i, island in enumerate(island_counts.index):
+        fold = data[data.hatchisland == island]["ringnr"]
+        fold = pd.DataFrame(fold)
+        fold["fold"] = i
+        folds = pd.concat([folds, fold], axis = 0)
+
+    #    fold_name = f"island_fold_{i}_{pheno}.csv"
+    #    fold.to_csv(f"data/interim/folds/{fold_name}", index=False)
+    #    print(f"Island {island} has {len(fold)} samples + {i}")
+
+    return folds
 
 def random_split(pheno:str = "mass", num_folds:int = 5, seed: int = 42) -> pd.DataFrame:
     data = pd.read_feather(f"data/processed/{pheno}BV.feather")  
@@ -136,5 +148,7 @@ def subset(X:pd.DataFrame, seed:int = 42, num_snps:int = 20000) -> pd.DataFrame:
 
     
 if __name__ == "__main__":
-    #island_split()
-    random_split("wing", 10, 42)
+    print(island_split("mass"))
+    #island_split("tarsus")
+    #island_split("wing")
+    #random_split("wing", 10, 42)

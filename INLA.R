@@ -38,7 +38,7 @@ d.map[3110:3125,]
 # from this we see the number of anmals
 Nanimals <- 3116
 
-phenotype <- "mass"
+phenotype <- "wing"
 
 # remove missing values
 d.morph <- filter(d.morph, !is.na(eval(as.symbol(phenotype))))
@@ -116,8 +116,8 @@ formula.mass = eval(as.symbol(phenotype)) ~ sex + FGRM + month + age +   outer +
 
 fold_data <- data.frame(ringnr = character(), fold = integer())
 
-for (i in 1:10){
-  data_from_file <- read.csv(paste("data/interim/random2_10fold_",i,".csv",sep = ""))
+for (i in 0:7){
+  data_from_file <- read.csv(paste("data/interim/folds/island_fold_",i,"_",phenotype,".csv",sep = ""))
   temp_df <- data.frame(ringnr = data_from_file$ringnr, fold = i)
   
   #append to the fold_data
@@ -133,7 +133,7 @@ corr_cv <- c()
 ########################################################
 #Everthing under here must go in a loop later
 ########################################################
-for (i in 7:10){
+for (i in 0:7){
   ringnr_test <- fold_data[fold_data$fold == i, "ringnr"]
   ringnr_train <- fold_data[fold_data$fold !=i, "ringnr"]
   
@@ -196,13 +196,15 @@ for (i in 7:10){
   
   
   
-  new_data <- data.frame(corr_EG, corr_BV_mode, corr_BV_mean)
-  write.table(new_data, "INLA_mass_10fold.csv", col.names = FALSE, row.names = FALSE, append = TRUE)
-  #write.csv(data.frame(corr_EG, corr_BV_mode, corr_BV_mean), "INLA_mass_10fold.csv", row.names = FALSE)
+  file_path <- paste("INLA_",phenotype,"_island_split.csv", sep = "")
+  
+  if (!file.exists(file_path)){
+    write.csv(data.frame(corr_EG, corr_BV_mode, corr_BV_mean), file_path, row.names = FALSE)
+  } else {
+    write.table(data.frame(corr_EG, corr_BV_mode, corr_BV_mean), file_path, col.names = FALSE, row.names = FALSE, append = TRUE)
+  }
+  
 }
-
-
-
 
 
 

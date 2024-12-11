@@ -1,2 +1,14 @@
 #Ignore data folder
+_pycache_/
 data/
+catboost_info/
+Figures/
+PCA.ipynb
+subsets/_pycache_/
+subsets/catboost_info/
+.Rhistory
+island_split.ipynb
+ML_and_AnimalModeling_houseSparrows.R
+tmux.txt
+plot_results.ipynb
+

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import xgboost as xgb
+import catboost as cb
 from sklearn.metrics import mean_absolute_error
 import optuna
 from scipy.stats import pearsonr
@@ -11,8 +11,9 @@ from split import prep_data_before_train, random_split, subset
 phenotype = sys.argv[1]
 num_SNPs = int(sys.argv[2])
 
+
 #Print the job
-print(f"Running hyperparameter optimization for xgboost with {phenotype} with {num_SNPs} SNPs...")
+print(f"Running hyperparameter optimization for catboost with {phenotype} with {num_SNPs} SNPs...")
 
 data = pd.read_feather(f"data/processed/{phenotype}BV.feather")
 
@@ -36,20 +37,17 @@ df = subset(df, num_snps=num_SNPs)
 # Function to perform hyperparameter optimization using Optuna
 def objective(trial, X_train, y_train):
     params = {
-        "objective": "reg:pseudohubererror",
-        "n_estimators": 500,
-        "verbosity": 0, 
+        "loss_function": "Huber:delta=1",
+        "iterations": 1000,
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
-        "max_depth": trial.suggest_int("max_depth", 2, 12),
+        "depth": trial.suggest_int("depth", 3, 12),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-        "min_child_weight": trial.suggest_int("min_child_weight", 1, 30), 
-        "lambda": trial.suggest_float("lambda", 1e-2, 10,log=True),
-        "alpha": trial.suggest_float("alpha", 1e-3, 1,log=True),
-        "gamma": trial.suggest_float("gamma", 1e-3, 1,log=True),    
+        "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.5, 1.0),
+        "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 10, 400),
+        "l2_leaf_reg": trial.suggest_int("l2_leaf_reg", 2, 30),
     }
 
-    model = xgb.XGBRegressor(**params, random_state = 42) 
+    model = cb.CatBoostRegressor(**params, random_state=42, silent=True)     
     
     # Perform cross-validation on the 9 inner folds
     mae_list = []
@@ -72,7 +70,7 @@ def objective(trial, X_train, y_train):
 # Outer loop: Iterate through each fold for testing
 outer_mae = []
 outer_corr = []
-output_file = f"xgb_random_split_{phenotype}.csv"
+output_file = f"cb_random_split_{phenotype}.csv"
 
 for test_fold in range(0, 10):
     # Split data into training (9 folds) and testing (1 fold)
@@ -83,18 +81,18 @@ for test_fold in range(0, 10):
     y_test = df[df['fold'] == test_fold][['ID', 'mean_pheno']]
     
     # Perform hyperparameter optimization using Optuna
-    sampler = optuna.samplers.TPESampler(seed=42)   
-    study = optuna.create_study(direction='minimize', sampler=sampler)
+    sampler = optuna.samplers.TPESampler(seed=42)
+    study = optuna.create_study(sampler=sampler,direction='minimize')
     study.optimize(lambda trial: objective(trial, X_train, y_train['ID']), n_trials=20, n_jobs=4)
     
     # Train the model with the best parameters on the 9 folds
     best_params = study.best_params
-    best_model = xgb.XGBRegressor(
-        objective="reg:pseudohubererror",
-        n_estimators=600,
-        verbosity=0,
+    best_model = cb.CatBoostRegressor(
+        loss_function='Huber:delta=1',
+        iterations=1000,
         **study.best_params,
-        random_state=42
+        random_state=42,
+        silent=True
     )
     best_model.fit(X_train.drop(columns=['fold']), y_train['ID'])
     
